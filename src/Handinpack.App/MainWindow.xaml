@@ -1,0 +1,321 @@
+<Window x:Class="Handinpack.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Handinpack - комплект к передаче" Width="1240" Height="820"
+        MinWidth="800" MinHeight="540" Language="ru-RU"
+        WindowStartupLocation="CenterScreen" Style="{StaticResource {x:Type Window}}"
+        AllowDrop="True" Drop="Window_Drop"
+        Loaded="Window_Loaded" SizeChanged="Window_SizeChanged"
+        PreviewKeyDown="Window_PreviewKeyDown" Closing="Window_Closing">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Grid x:Name="MainEditor" Margin="24,20,24,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <DockPanel Margin="0,0,0,20" LastChildFill="True">
+                <WrapPanel DockPanel.Dock="Right" VerticalAlignment="Center" Margin="16,0,0,0">
+                    <Button Content="Открыть набор" Click="OpenRecipe_Click" Margin="0,0,8,0"
+                            AutomationProperties.Name="Открыть сохранённый набор" />
+                    <Button Content="Сохранить набор" Click="SaveRecipe_Click" Margin="0,0,8,0"
+                            AutomationProperties.Name="Сохранить текущий набор" />
+                    <Button x:Name="VerifyButton" Content="Проверить комплект" Click="Verify_Click"
+                            AutomationProperties.Name="Проверить существующий комплект" />
+                </WrapPanel>
+                <StackPanel>
+                    <TextBlock Text="Handinpack" FontSize="24" FontWeight="SemiBold" LineHeight="32" />
+                    <TextBlock Text="Подготовка материалов к передаче" Foreground="{DynamicResource MutedBrush}" Margin="0,2,0,0" />
+                </StackPanel>
+            </DockPanel>
+
+            <DockPanel Grid.Row="1" Margin="0,0,0,16" LastChildFill="True">
+                <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
+                    <Button Content="Добавить файлы" Click="AddFiles_Click" Margin="0,0,8,0"
+                            AutomationProperties.Name="Добавить исходные файлы" />
+                    <Button Content="Добавить папки" Click="AddFolders_Click"
+                            AutomationProperties.Name="Добавить исходные папки" />
+                    <Button Content="Источники" Click="SourcesMenu_Click" Margin="8,0,0,0"
+                            AutomationProperties.Name="Управление источниками"
+                            AutomationProperties.HelpText="Убрать источник из плана без удаления файлов" />
+                </StackPanel>
+                <TextBlock Text="Работаем с копиями. Оригиналы остаются на месте."
+                           Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center"
+                           Margin="20,0,0,0" TextTrimming="CharacterEllipsis" />
+            </DockPanel>
+
+            <Grid Grid.Row="2">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition x:Name="SourcesColumn" Width="184" />
+                    <ColumnDefinition Width="*" MinWidth="260" />
+                    <ColumnDefinition Width="328" />
+                </Grid.ColumnDefinitions>
+
+                <Border x:Name="SourcesPanel" Grid.Column="0" Padding="0,12,16,16"
+                        BorderBrush="{DynamicResource RuleBrush}" BorderThickness="0,1,0,0">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Top" Text="Источники" FontWeight="SemiBold" Margin="0,0,0,12" />
+                        <TextBlock DockPanel.Dock="Bottom" Text="В комплекте будут только копии."
+                                   Style="{StaticResource FieldLabel}" Margin="0,16,0,0" />
+                        <Button DockPanel.Dock="Bottom" Content="Убрать из плана" Click="RemoveSource_Click" Margin="0,12,0,0"
+                                AutomationProperties.HelpText="Убирает выбранный источник из плана. Файлы остаются на месте.">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding SelectedItem, ElementName=SourcesList}" Value="{x:Null}">
+                                            <Setter Property="IsEnabled" Value="False" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                        <ListBox x:Name="SourcesList" AutomationProperties.Name="Исходные файлы и папки"
+                                 VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding}" TextTrimming="CharacterEllipsis" ToolTip="{Binding}" />
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </DockPanel>
+                </Border>
+
+                <Border Grid.Column="1" BorderBrush="{DynamicResource RuleBrush}" BorderThickness="1,1,1,0"
+                        Background="{DynamicResource SurfaceBrush}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+
+                        <Grid Margin="16,12,16,16">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <TextBlock Text="Опись" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,12" />
+                            <Grid Grid.Row="1">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="166" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock x:Name="SearchLabel" Text="Поиск по файлам" Style="{StaticResource FieldLabel}" />
+                                <TextBox x:Name="SearchBox" Grid.Row="1" Margin="0,0,8,0" TextChanged="Search_TextChanged"
+                                         AutomationProperties.Name="Поиск по файлам" AutomationProperties.LabeledBy="{Binding ElementName=SearchLabel}"
+                                         AutomationProperties.HelpText="По имени файла или относительному пути"
+                                         ToolTip="Поиск по имени или пути. Ctrl+F" />
+                                <ComboBox x:Name="FilterBox" Grid.Row="1" Grid.Column="1" SelectedIndex="0"
+                                          SelectionChanged="Filter_SelectionChanged" AutomationProperties.Name="Состояние файлов">
+                                    <ComboBoxItem Content="Все" Tag="all" />
+                                    <ComboBoxItem Content="Требует решения" Tag="issues" />
+                                    <ComboBoxItem Content="Исключены" Tag="excluded" />
+                                </ComboBox>
+                            </Grid>
+                        </Grid>
+
+                        <DataGrid x:Name="FilesGrid" Grid.Row="1" IsReadOnly="True" AutoGenerateColumns="False"
+                                  CanUserAddRows="False" CanUserDeleteRows="False" CanUserResizeRows="False"
+                                  CanUserReorderColumns="False" SelectionMode="Extended" SelectionUnit="FullRow"
+                                  EnableRowVirtualization="True" EnableColumnVirtualization="True"
+                                  VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
+                                  ScrollViewer.CanContentScroll="True" SelectionChanged="FilesGrid_SelectionChanged"
+                                  AutomationProperties.Name="Опись будущего комплекта"
+                                  AutomationProperties.HelpText="Таблица только для чтения. Имя копии меняется в панели справа.">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Исходник" Binding="{Binding Source}" Width="1.15*" MinWidth="140">
+                                    <DataGridTextColumn.ElementStyle>
+                                        <Style TargetType="TextBlock" BasedOn="{StaticResource GridText}">
+                                            <Setter Property="ToolTip" Value="{Binding Source}" />
+                                        </Style>
+                                    </DataGridTextColumn.ElementStyle>
+                                </DataGridTextColumn>
+                                <DataGridTextColumn Header="В комплекте" Binding="{Binding ArchivePath}" Width="1.2*" MinWidth="140">
+                                    <DataGridTextColumn.ElementStyle>
+                                        <Style TargetType="TextBlock" BasedOn="{StaticResource GridText}">
+                                            <Setter Property="ToolTip" Value="{Binding ArchivePath}" />
+                                        </Style>
+                                    </DataGridTextColumn.ElementStyle>
+                                </DataGridTextColumn>
+                                <DataGridTextColumn Header="Размер" Binding="{Binding SizeText}" Width="92" CanUserSort="False">
+                                    <DataGridTextColumn.ElementStyle>
+                                        <Style TargetType="TextBlock" BasedOn="{StaticResource GridText}">
+                                            <Setter Property="TextAlignment" Value="Right" />
+                                        </Style>
+                                    </DataGridTextColumn.ElementStyle>
+                                </DataGridTextColumn>
+                                <DataGridTextColumn Header="Состояние" Binding="{Binding StateText}" Width="144" MinWidth="110">
+                                    <DataGridTextColumn.ElementStyle>
+                                        <Style TargetType="TextBlock" BasedOn="{StaticResource GridText}">
+                                            <Setter Property="ToolTip" Value="{Binding StateText}" />
+                                        </Style>
+                                    </DataGridTextColumn.ElementStyle>
+                                </DataGridTextColumn>
+                            </DataGrid.Columns>
+                        </DataGrid>
+
+                        <StackPanel Grid.Row="1" Margin="24,64,24,0" VerticalAlignment="Top" IsHitTestVisible="False">
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding HasItems, ElementName=FilesGrid}" Value="False">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
+                            <TextBlock FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Text" Value="В этом представлении нет файлов" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding HasItems, ElementName=SourcesList}" Value="False">
+                                                <Setter Property="Text" Value="Добавьте файлы или папки" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <TextBlock Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" LineHeight="20" Margin="0,8,0,0">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Text" Value="Измените поиск или фильтр. Если источник пуст, добавьте материалы для передачи." />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding HasItems, ElementName=SourcesList}" Value="False">
+                                                <Setter Property="Text" Value="Здесь появятся исходные имена и пути будущих копий. Можно перетащить материалы прямо в окно." />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <Border Grid.Column="2" Padding="20,12,0,16" BorderBrush="{DynamicResource RuleBrush}" BorderThickness="0,1,0,0">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="0,0,8,0">
+                        <StackPanel>
+                            <TextBlock Text="Получатель получит" Style="{StaticResource SectionTitle}" />
+
+                            <TextBlock Text="Название комплекта" Style="{StaticResource FieldLabel}" />
+                            <TextBox x:Name="PackageNameBox" TextChanged="Destination_Changed" Margin="0,0,0,12"
+                                     AutomationProperties.Name="Название комплекта" />
+
+                            <TextBlock Text="Формат" Style="{StaticResource FieldLabel}" />
+                            <ComboBox x:Name="FormatBox" SelectedIndex="0" SelectionChanged="Format_SelectionChanged"
+                                      Margin="0,0,0,12" AutomationProperties.Name="Формат комплекта">
+                                <ComboBoxItem Content="ZIP" Tag="zip" />
+                                <ComboBoxItem Content="Папка" Tag="folder" />
+                            </ComboBox>
+
+                            <TextBlock Text="Куда сохранить" Style="{StaticResource FieldLabel}" />
+                            <Grid Margin="0,0,0,6">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBox x:Name="DestinationBox" TextChanged="Destination_Changed" Margin="0,0,8,0"
+                                         AutomationProperties.Name="Родительская папка результата" />
+                                <Button Grid.Column="1" Content="Выбрать" Click="BrowseDestination_Click"
+                                        AutomationProperties.Name="Выбрать папку для комплекта" />
+                            </Grid>
+                            <TextBlock x:Name="OutputHintText" Style="{StaticResource FieldLabel}" Margin="0,0,0,16"
+                                       TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" />
+
+                            <Border BorderBrush="{DynamicResource RuleBrush}" BorderThickness="0,1,0,1" Padding="0,12" Margin="0,0,0,20">
+                                <TextBlock x:Name="SummaryText" Text="Состав пока пуст" TextWrapping="Wrap" LineHeight="20"
+                                           AutomationProperties.LiveSetting="Polite" />
+                            </Border>
+
+                            <Expander Header="Требования к комплекту" Margin="0,0,0,20"
+                                      Foreground="{DynamicResource InkBrush}" AutomationProperties.Name="Требования к комплекту">
+                                <StackPanel Margin="0,12,0,0">
+                                    <TextBlock Text="Допустимые расширения" Style="{StaticResource FieldLabel}" />
+                                    <TextBox x:Name="ExtensionsBox" TextChanged="Requirements_Changed"
+                                             AutomationProperties.Name="Допустимые расширения файлов" />
+                                    <TextBlock Text="Через запятую. Пусто - любые." Style="{StaticResource FieldLabel}" Margin="0,4,0,12" />
+
+                                    <TextBlock Text="Один файл, МиБ" Style="{StaticResource FieldLabel}" />
+                                    <TextBox x:Name="MaxFileBox" TextChanged="Requirements_Changed" Margin="0,0,0,12"
+                                             AutomationProperties.Name="Максимальный размер одного файла в мебибайтах" />
+                                    <TextBlock Text="Все материалы, МиБ" Style="{StaticResource FieldLabel}" />
+                                    <TextBox x:Name="MaxPayloadBox" TextChanged="Requirements_Changed" Margin="0,0,0,12"
+                                             AutomationProperties.Name="Максимальный суммарный размер исходных материалов в мебибайтах" />
+                                    <TextBlock Text="Готовый комплект, МиБ" Style="{StaticResource FieldLabel}" />
+                                    <TextBox x:Name="MaxPackageBox" TextChanged="Requirements_Changed" Margin="0,0,0,12"
+                                             AutomationProperties.Name="Максимальный размер готового комплекта с описями в мебибайтах" />
+                                    <TextBlock Text="Пустое поле - без ограничения. 1 МиБ = 1 048 576 байт."
+                                               Style="{StaticResource FieldLabel}" Margin="0,0,0,12" />
+
+                                    <TextBlock Text="Обязательные пути в комплекте" Style="{StaticResource FieldLabel}" />
+                                    <TextBox x:Name="RequiredPathsBox" TextChanged="Requirements_Changed" AcceptsReturn="True"
+                                             TextWrapping="NoWrap" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                                             Height="76" VerticalContentAlignment="Top"
+                                             AutomationProperties.Name="Обязательные относительные пути, по одному на строку" />
+                                    <TextBlock Text="По одному относительному пути на строку." Style="{StaticResource FieldLabel}" Margin="0,4,0,0" />
+                                </StackPanel>
+                            </Expander>
+
+                            <TextBlock Text="Выбранный файл" FontWeight="SemiBold" Margin="0,0,0,8" />
+                            <TextBlock x:Name="SelectedSourceText" Text="Выберите строку в описи."
+                                       Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" LineHeight="18" Margin="0,0,0,16" />
+
+                            <StackPanel x:Name="EditPanel" IsEnabled="False">
+                                <TextBlock Text="Путь копии в комплекте" Style="{StaticResource FieldLabel}" />
+                                <TextBox x:Name="ArchivePathBox" AutomationProperties.Name="Путь выбранной копии в комплекте" />
+                                <Button Content="Применить имя копии" Click="ApplyName_Click" Margin="0,8,0,16" HorizontalAlignment="Left" />
+
+                                <TextBlock Text="Причина исключения" Style="{StaticResource FieldLabel}" />
+                                <TextBox x:Name="ExclusionReasonBox" TextWrapping="Wrap" AcceptsReturn="True" MinHeight="56"
+                                         VerticalContentAlignment="Top" AutomationProperties.Name="Причина исключения выбранного файла" />
+                                <Button x:Name="ToggleIncludedButton" Content="Включить / исключить" Click="ToggleIncluded_Click"
+                                        Margin="0,8,0,0" HorizontalAlignment="Left"
+                                        AutomationProperties.HelpText="Изменяет только состав комплекта. Оригинал остаётся на месте." />
+                            </StackPanel>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Border>
+            </Grid>
+        </Grid>
+
+        <Border Grid.Row="1" BorderBrush="{DynamicResource RuleBrush}" BorderThickness="0,1,0,0"
+                Background="{DynamicResource SurfaceBrush}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <ProgressBar x:Name="ProgressBar" Height="3" Minimum="0" Maximum="100" Value="0" BorderThickness="0"
+                             Foreground="{DynamicResource AccentBrush}" Background="{DynamicResource SurfaceBrush}"
+                             AutomationProperties.Name="Ход сборки и проверки" />
+                <Grid Grid.Row="1" Margin="24,14">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock x:Name="StatusText" Text="Добавьте материалы для нового комплекта."
+                               TextWrapping="Wrap" LineHeight="20" VerticalAlignment="Center" Margin="0,0,20,0"
+                               AutomationProperties.LiveSetting="Polite" />
+                    <WrapPanel Grid.Column="1" VerticalAlignment="Center">
+                        <Button x:Name="ShowOutputButton" Content="Показать результат" Click="ShowOutput_Click"
+                                Margin="0,0,8,0" IsEnabled="False" />
+                        <Button x:Name="CancelButton" Content="Отменить" Click="Cancel_Click"
+                                Margin="0,0,8,0" IsEnabled="False" />
+                        <Button x:Name="BuildButton" Content="Собрать и проверить" Click="Build_Click"
+                                Style="{StaticResource PrimaryButton}" IsEnabled="False" />
+                    </WrapPanel>
+                </Grid>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

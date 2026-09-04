@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>Handinpack</AssemblyName>
+    <Version>0.1.0</Version>
+    <Authors>levvs-one</Authors>
+    <Description>Prepare and verify file handover packages without changing originals.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Handinpack.Core/Handinpack.Core.csproj" />
+  </ItemGroup>
+</Project>
