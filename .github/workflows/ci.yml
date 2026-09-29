@@ -26,16 +26,22 @@ jobs:
         run: dotnet build Handinpack.sln -c Release --no-restore
       - name: Test
         run: dotnet test --solution Handinpack.sln -c Release --no-build
-      - name: Publish portable Windows application
-        run: dotnet publish src/Handinpack.App/Handinpack.App.csproj -c Release -r win-x64 --self-contained true -p:RestoreLockedMode=true -p:DebugType=None -p:DebugSymbols=false -o artifacts/Handinpack
+      - name: CLI smoke test
+        run: dotnet run --project src/Carryall.Cli/Carryall.Cli.csproj -c Release --no-build -- --version
+      - name: Publish Windows application
+        run: dotnet publish src/Handinpack.App/Handinpack.App.csproj -c Release -r win-x64 --self-contained true --no-restore -p:DebugType=None -p:DebugSymbols=false -o artifacts/Carryall
+      - name: Publish Windows CLI
+        run: dotnet publish src/Carryall.Cli/Carryall.Cli.csproj -c Release -r win-x64 --self-contained true --no-restore -p:DebugType=None -p:DebugSymbols=false -o artifacts/carryall-cli
       - name: Include documentation and license
         shell: pwsh
         run: |
-          Copy-Item -LiteralPath LICENSE,README.md -Destination artifacts/Handinpack
-          Copy-Item -LiteralPath docs -Destination artifacts/Handinpack/docs -Recurse
+          Copy-Item -LiteralPath LICENSE,README.md,CHANGELOG.md,SECURITY.md -Destination artifacts/Carryall
+          Copy-Item -LiteralPath docs -Destination artifacts/Carryall/docs -Recurse
+          Copy-Item -LiteralPath LICENSE,README.md,CHANGELOG.md,SECURITY.md -Destination artifacts/carryall-cli
+          Copy-Item -LiteralPath docs -Destination artifacts/carryall-cli/docs -Recurse
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: Handinpack-windows-x64
-          path: artifacts/Handinpack
+          name: Carryall-windows-x64
+          path: artifacts
           if-no-files-found: error
           retention-days: 14
