@@ -69,7 +69,7 @@
         "resolved": "4.4.0",
         "contentHash": "8g2KL2LjsXXVywvQb0uWQBANOONVnRf6cTSbON9ar6gIw08oSBY7Z3PJlC8sHbqOVvCr7srrcWiKzb12SUoV2w=="
       },
-      "Handinpack": {
+      "Carryall": {
         "type": "Project",
         "dependencies": {
           "Handinpack.Core": "[1.0.0, )"

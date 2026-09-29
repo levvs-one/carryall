@@ -1,0 +1,99 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: carryall-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: windows-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Read version
+        id: version
+        shell: pwsh
+        run: |
+          $version = (Get-Content -LiteralPath VERSION -Raw).Trim()
+          if ($version -notmatch '^\d+\.\d+\.\d+([-.][0-9A-Za-z.-]+)?$') {
+            throw "VERSION is not a valid release version: $version"
+          }
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "tag=v$version" >> $env:GITHUB_OUTPUT
+      - name: Check whether release already exists
+        id: release_check
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          gh release view $env:TAG *> $null
+          if ($LASTEXITCODE -eq 0) {
+            "exists=true" >> $env:GITHUB_OUTPUT
+          } else {
+            "exists=false" >> $env:GITHUB_OUTPUT
+          }
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        if: steps.release_check.outputs.exists != 'true'
+        with:
+          global-json-file: global.json
+      - name: Restore locked dependencies
+        if: steps.release_check.outputs.exists != 'true'
+        run: dotnet restore Handinpack.sln --locked-mode
+      - name: Build
+        if: steps.release_check.outputs.exists != 'true'
+        run: dotnet build Handinpack.sln -c Release --no-restore
+      - name: Test
+        if: steps.release_check.outputs.exists != 'true'
+        run: dotnet test --solution Handinpack.sln -c Release --no-build
+      - name: Publish
+        if: steps.release_check.outputs.exists != 'true'
+        shell: pwsh
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          New-Item -ItemType Directory -Force -Path stage/Carryall,stage/carryall-cli,dist | Out-Null
+
+          dotnet publish src/Handinpack.App/Handinpack.App.csproj -c Release -r win-x64 --self-contained true --no-restore `
+            -p:Version=$env:VERSION -p:DebugType=None -p:DebugSymbols=false -o stage/Carryall
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+          dotnet publish src/Carryall.Cli/Carryall.Cli.csproj -c Release -r win-x64 --self-contained true --no-restore `
+            -p:Version=$env:VERSION -p:DebugType=None -p:DebugSymbols=false -o stage/carryall-cli
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+          Copy-Item -LiteralPath LICENSE,README.md,CHANGELOG.md,SECURITY.md -Destination stage/Carryall
+          Copy-Item -LiteralPath docs -Destination stage/Carryall/docs -Recurse
+          Copy-Item -LiteralPath LICENSE,README.md,CHANGELOG.md,SECURITY.md -Destination stage/carryall-cli
+          Copy-Item -LiteralPath docs -Destination stage/carryall-cli/docs -Recurse
+
+          Compress-Archive -Path stage/Carryall/* -DestinationPath "dist/Carryall-$env:VERSION-windows-x64.zip" -CompressionLevel Optimal
+          Compress-Archive -Path stage/carryall-cli/* -DestinationPath "dist/carryall-cli-$env:VERSION-windows-x64.zip" -CompressionLevel Optimal
+
+          Get-ChildItem dist -Filter *.zip | Sort-Object Name | ForEach-Object {
+            $hash = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+            "$hash  $($_.Name)"
+          } | Set-Content -LiteralPath dist/SHA256SUMS.txt -Encoding ascii
+      - name: Create GitHub release
+        if: steps.release_check.outputs.exists != 'true'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          gh release create $env:TAG dist/*.zip dist/SHA256SUMS.txt `
+            --target $env:GITHUB_SHA `
+            --title "Carryall $env:VERSION" `
+            --notes-file docs/release-notes.md `
+            --latest
