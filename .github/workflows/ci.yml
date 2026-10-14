@@ -39,7 +39,7 @@ jobs:
           Copy-Item -LiteralPath docs -Destination artifacts/Carryall/docs -Recurse
           Copy-Item -LiteralPath LICENSE,README.md,CHANGELOG.md,SECURITY.md -Destination artifacts/carryall-cli
           Copy-Item -LiteralPath docs -Destination artifacts/carryall-cli/docs -Recurse
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: Carryall-windows-x64
           path: artifacts
